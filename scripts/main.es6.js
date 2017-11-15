@@ -15,73 +15,75 @@
  */
 'use strict';
 
-// Initializes the Sticky Notes app.
-function StickyNotesApp() {
-  // Shortcuts to DOM Elements.
-  this.notesContainer = document.getElementById('notes-container');
-  this.noteMessageInput = document.getElementById('message');
-  this.addNoteButton = document.getElementById('save');
-  this.notesSectionTitle = document.getElementById('notes-section-title');
+class StickyNotesApp {
+  // Initializes the Sticky Notes app.
+  constructor() {
+    // Shortcuts to DOM Elements.
+    this.notesContainer = document.getElementById('notes-container');
+    this.noteMessageInput = document.getElementById('message');
+    this.addNoteButton = document.getElementById('save');
+    this.notesSectionTitle = document.getElementById('notes-section-title');
 
-  // Saves notes on button click.
-  this.addNoteButton.addEventListener('click', this.saveNote.bind(this));
+    // Saves notes on button click.
+    this.addNoteButton.addEventListener('click', this.saveNote.bind(this));
 
-  // Toggle for the button.
-  this.noteMessageInput.addEventListener('keyup', this.toggleButton.bind(this));
+    // Toggle for the button.
+    this.noteMessageInput.addEventListener('keyup', this.toggleButton.bind(this));
 
-  // Loads all the notes.
-  for (var key in localStorage) {
-    this.displayNote(key, localStorage[key]);
+    // Loads all the notes.
+    for (var key in localStorage) {
+      this.displayNote(key, localStorage[key]);
+    }
+
+    // Listen for updates to notes from other windows.
+    window.addEventListener('storage', function(e) {
+      this.displayNote(e.key, e.newValue);
+    }.bind(this));
+  }
+  
+  // Saves a new sticky note on localStorage.
+  saveNote() {
+    if (this.noteMessageInput.value) {
+      var key = Date.now().toString();
+      localStorage.setItem(key, this.noteMessageInput.value);
+      this.displayNote(key, this.noteMessageInput.value);
+      StickyNotesApp.resetMaterialTextfield(this.noteMessageInput);
+      this.toggleButton();
+    }
   }
 
-  // Listen for updates to notes from other windows.
-  window.addEventListener('storage', function(e) {
-    this.displayNote(e.key, e.newValue);
-  }.bind(this));
+  // Resets the given MaterialTextField.
+  static resetMaterialTextfield(element) {
+    element.value = '';
+    element.parentNode.MaterialTextfield.boundUpdateClassesHandler();
+    element.blur();
+  }
+
+  // Creates/updates/deletes a note in the UI.
+  displayNote(key, message) {
+    var note = document.getElementById(key);
+    // If no element with the given key exists we create a new note.
+    if (!note) {
+      note = document.createElement('sticky-note');
+      note.id = key;
+      this.notesContainer.insertBefore(note, this.notesSectionTitle.nextSibling);
+    }
+    // If the message is null we delete the note.
+    if (!message) {
+      return note.deleteNote();
+    }
+    note.setMessage(message);
+  }
+  
+  // Enables or disables the submit button depending on the values of the input field.
+  toggleButton() {
+    if (this.noteMessageInput.value) {
+      this.addNoteButton.removeAttribute('disabled');
+    } else {
+      this.addNoteButton.setAttribute('disabled', 'true');
+    }
+  }
 }
-
-// Saves a new sticky note on localStorage.
-StickyNotesApp.prototype.saveNote = function() {
-  if (this.noteMessageInput.value) {
-    var key = Date.now().toString();
-    localStorage.setItem(key, this.noteMessageInput.value);
-    this.displayNote(key, this.noteMessageInput.value);
-    StickyNotesApp.resetMaterialTextfield(this.noteMessageInput);
-    this.toggleButton();
-  }
-};
-
-// Resets the given MaterialTextField.
-StickyNotesApp.resetMaterialTextfield = function(element) {
-  element.value = '';
-  element.parentNode.MaterialTextfield.boundUpdateClassesHandler();
-  element.blur();
-};
-
-// Creates/updates/deletes a note in the UI.
-StickyNotesApp.prototype.displayNote = function(key, message) {
-  var note = document.getElementById(key);
-  // If no element with the given key exists we create a new note.
-  if (!note) {
-    note = document.createElement('sticky-note');
-    note.id = key;
-    this.notesContainer.insertBefore(note, this.notesSectionTitle.nextSibling);
-  }
-  // If the message is null we delete the note.
-  if (!message) {
-    return note.deleteNote();
-  }
-  note.setMessage(message);
-};
-
-// Enables or disables the submit button depending on the values of the input field.
-StickyNotesApp.prototype.toggleButton = function() {
-  if (this.noteMessageInput.value) {
-    this.addNoteButton.removeAttribute('disabled');
-  } else {
-    this.addNoteButton.setAttribute('disabled', 'true');
-  }
-};
 
 // On load start the app.
 window.addEventListener('load', function() {
